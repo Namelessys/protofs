@@ -22,9 +22,8 @@ function love.update(dt)
 	global.game.update(dt)
 	global.noname.update(dt)
 	global.bladi.update(dt)
-	if global.simulatePhysics then
-		global.fse.update(dt)
-	end
+	
+	global.fse.update(dt)
 end
 
 function love.draw()
@@ -34,8 +33,9 @@ function love.draw()
 	end
 	
 	global.renderer.preDraw()
-	global.fse.draw(-50, -50, global.conf.squareScale, global.conf.squareGab)
+	global.fse.draw(0, 0, global.conf.squareScaleX, global.conf.squareScaleY, global.conf.squareGab)
 	global.renderer.afterDraw()
+	
 	global.game.draw()
 	global.noname.draw()
 	global.bladi.draw()

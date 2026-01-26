@@ -18,20 +18,31 @@ end
 
 function FluidMatrix:update(dt)
 	local matrix = self.matrix
+	
+	local totalQuantity = 0
+	local totalEnergy = 0
 
 	for x = 1, self.sizeX do
 		for y = 1, self.sizeY do
 			matrix[x][y]:update(dt, self)
+			
+			totalQuantity = totalQuantity + matrix[x][y]:getQuantity()
+			totalEnergy = totalEnergy + matrix[x][y]:getPressure()
+			for fv in ipairs(matrix[x][y]:getFlowVelocities()) do
+				totalEnergy = totalEnergy + fv
+			end
 		end
 	end
+	
+	debug.dlog("total: quantity: " .. tostring(totalQuantity) .. ", energy: " .. tostring(totalEnergy))
 end
 
-function FluidMatrix:draw(offsetX, offsetY, scale, gab)
+function FluidMatrix:draw(offsetX, offsetY, scaleX, scaleY, gab)
 	local matrix = self.matrix
 
 	for x = 1, self.sizeX do
 		for y = 1, self.sizeY do
-			matrix[x][y]:draw(x, y, offsetX, offsetY, scale, gab)
+			matrix[x][y]:draw(x, y, offsetX, offsetY, scaleX, scaleY, gab)
 		end
 	end
 end

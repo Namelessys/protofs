@@ -49,7 +49,7 @@ function noname.update(dt)
 	end
 
 	if input.keyDown("f") then
-		setQuantity(3, 1, 1)
+		setQuantity(3, 1, 3)
 	end
 
 	--print when the 'B' key is pressed or released

@@ -48,6 +48,13 @@ function game.update(dt)
 		print("Tick: " .. global.fse.currentMatrix)
 		global.simulatePhysics = true
 	end
+	if input.keyPressed("m") then
+		if global.fse.currentMatrixRender == 1 then
+			global.fse.currentMatrixRender = 2
+		else
+			global.fse.currentMatrixRender = 1
+		end
+	end
 	
 	--global.fse.getCurrentCell(3, 3):setPressure(.01)
 	--print(global.fse.getCurrentCell(3, 5):getPressure())

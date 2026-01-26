@@ -1,5 +1,5 @@
 --LÖVE main file 
-local version = "v0.0.2d"
+local version = "v0.0.3"
 
 
 
