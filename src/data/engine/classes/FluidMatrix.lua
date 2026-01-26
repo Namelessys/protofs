@@ -28,9 +28,8 @@ function FluidMatrix:update(dt)
 			
 			totalQuantity = totalQuantity + matrix[x][y]:getQuantity()
 			totalEnergy = totalEnergy + matrix[x][y]:getPressure()
-			for fv in ipairs(matrix[x][y]:getFlowVelocities()) do
-				totalEnergy = totalEnergy + fv
-			end
+			totalEnergy = totalEnergy + matrix[x][y]:getFlowForce(1)
+			totalEnergy = totalEnergy + matrix[x][y]:getFlowForce(2)
 		end
 	end
 	
