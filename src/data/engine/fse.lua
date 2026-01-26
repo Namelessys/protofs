@@ -1,6 +1,6 @@
 local fse = {
 	currentMatrix = 1,
-	currentMatrixRender = 2,
+	currentMatrixRender = 1,
 	
 	nextMatrix = 2,
 	
@@ -22,6 +22,7 @@ function fse.init(sizeX, sizeY)
 end
 
 function fse.update(dt)	
+	debug.setFuncPrefix("[FSE_UPDATE]")
 	fse.matrices[fse.currentMatrix]:update(dt)
 	
 	if fse.currentMatrix + 1 > #fse.matrices then
@@ -38,12 +39,15 @@ function fse.update(dt)
 end
 
 function fse.draw(offsetX, offsetY, scale, gab)
+	debug.setFuncPrefix("[FSE_DRAW]")
 	fse.matrices[fse.currentMatrixRender]:draw(offsetX, offsetY, scale, gab)
 	
-	if fse.currentMatrixRender + 1 > #fse.matrices then
-		fse.currentMatrixRender = 1
-	else
-		fse.currentMatrixRender = fse.currentMatrixRender + 1
+	if global.simulatePhysics then
+		if fse.currentMatrixRender + 1 > #fse.matrices then
+			fse.currentMatrixRender = 1
+		else
+			fse.currentMatrixRender = fse.currentMatrixRender + 1
+		end
 	end
 end
 
@@ -54,9 +58,17 @@ function fse.getNextMatrix()
 	return fse.matrices[fse.nextMatrix]
 end
 function fse.getCurrentCell(x, y)
+	local matrixSizeX, matrixSizeY = fse.getCurrentMatrix():getSize()
+	if x < 1 or y < 1 or x > matrixSizeX or y > matrixSizeY then
+		return false
+	end
 	return fse.getCurrentMatrix().matrix[x][y]
 end
 function fse.getNextCell(x, y)
+	local matrixSizeX, matrixSizeY = fse.getCurrentMatrix():getSize()
+	if x < 1 or y < 1 or x > matrixSizeX or y > matrixSizeY then
+		return false
+	end
 	return fse.getNextMatrix().matrix[x][y]
 end
 

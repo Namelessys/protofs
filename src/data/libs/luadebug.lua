@@ -242,9 +242,9 @@ addDebugLogLevel("warn", "[WARN]", "warn")
 addDebugLogLevel("dlog", "[DEBUG]", "debug")
 
 --===== merge debug into _G.debug =====--
-local function init()
+local function init(forceMerge)
 	for i, v in pairs(debug) do
-		if _G.debug[i] == nil then
+		if forceMerge or _G.debug[i] == nil then
 			_G.debug[i] = v
 		else
 			debug.warn("_G.debug and debug.lua has common variable '" .. i .. "'. Skipping merge.")

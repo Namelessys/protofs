@@ -4,10 +4,10 @@ function love.conf(conf)
 
 	 if true then --q&d window positioning.
 		  
-
-		conf.window.display = 2
-		--conf.window.x = 840
-		conf.window.x = 1680
+		conf.window.resizable = true
+		conf.window.display = 3
+		conf.window.x = 840
+		--conf.window.x = 1680
 		conf.window.y = 50
 		conf.window.width = 840
 		conf.window.height = 1000

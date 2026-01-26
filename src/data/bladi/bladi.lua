@@ -8,6 +8,7 @@ local bladi = {
 }
 
 function bladi.init()
+	do return end
 	--set the logging prefix inside the 'bladi.init' function.
 	debug.setFuncPrefix("[BLADI][INIT]") 
 	
@@ -56,7 +57,7 @@ function bladi.update(dt)
 	end
 	
 	--set pressure at cell 3 3 to '.1' as long as the 'V' key is pressed down.
-	if input.keyDown("v") then
+	if input.keyDown("n") then
 		global.fse.setPressure(3, 3, .1)
 	end
 end
