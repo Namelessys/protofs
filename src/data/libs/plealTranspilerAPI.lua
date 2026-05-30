@@ -30,7 +30,7 @@ local pleal = {}
 local log = print
 local err = log
 local warn = log
-local dlog = function() end
+local dlog = function(...) end
 
 local globalConfig = {
 	replacementPrefix = "$",
@@ -334,7 +334,7 @@ local function transpile(input, note)
 	--process conf 
 	if conf.removeConfLine and input:sub(0, 2) == "#!" or input:sub(0, 2) == "#?" then
 		log("Remove conf line")
-		local confLineEnd = input:find("\n")
+		local confLineEnd = input:find("\n") + 0
 		input = input:sub(confLineEnd)
 	end
 	

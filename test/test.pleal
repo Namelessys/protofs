@@ -1,0 +1,39 @@
+#!/usr/bin/pleal
+
+
+local sideLength = 1
+local diagonal = math.sqrt(sideLength ^ 2 + sideLength ^ 2)
+local totalDiagonalDistance, totalHorizontalDistance = 0, 0
+local tickCount = 1
+
+local maxDistDiff = 0
+
+while tickCount < 0 do
+	local executionMode = " "
+	
+	if totalDiagonalDistance < totalHorizontalDistance then
+		executionMode = "o"
+		totalDiagonalDistance = totalDiagonalDistance + diagonal
+	end
+	
+	--[[
+	if tickCount % 3 ~= 0 then
+		executionMode = "n"
+		totalDiagonalDistance = totalDiagonalDistance + diagonal
+	elseif totalDiagonalDistance + diagonal < totalHorizontalDistance then
+		executionMode = "o"
+		totalDiagonalDistance = totalDiagonalDistance + diagonal
+	end
+	]]
+	
+	totalHorizontalDistance = totalHorizontalDistance + sideLength
+	
+	if math.abs(totalHorizontalDistance - totalDiagonalDistance) > maxDistDiff then
+		maxDistDiff = math.abs(totalHorizontalDistance - totalDiagonalDistance)
+	end
+	
+	print("$executionMode   $tickCount: $totalHorizontalDistance $totalDiagonalDistance")
+	tickCount = tickCount + 1
+end
+
+print("max diff: $maxDistDiff")

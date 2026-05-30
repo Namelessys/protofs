@@ -1,0 +1,75 @@
+local ut = require("UT")
+
+local FACES = 4
+
+--local portion = {.5, .5}
+local portion = {}
+local massTotal = 0
+
+
+--===== init =====--
+for c = 1, FACES do
+	portion[c] = 1 / FACES
+	massTotal = FACES * 10
+end
+
+
+--===== functions =====--
+local function massAdd(face, massAdded)
+	local massFaceCurrent = massTotal * portion[face]
+	local massFaceNew = massFaceCurrent + massAdded
+	
+	local massTotalNew = massTotal + massAdded
+	
+	local portionNew = massFaceNew / massTotalNew
+	local portionDiff = portionNew - portion[face]
+	
+	--portion[face] = massFaceNew / massTotalNew
+	
+	
+	for f = 1, FACES do
+		if f == face then
+			portion[face] = portion[face] + portionDiff
+		else --non changed subcell
+			local massFace = massTotal * portion[f]
+			local portionNew = massFace / massTotalNew
+			portion[f] = portionNew
+		end
+	end
+	massTotal = massTotalNew
+end
+
+local function statsPrint()
+	print("--===== stats =====--")
+	print("massTotal: $massTotal")
+	print("portions: ${ut.tostring(portion)}")
+	
+	do 
+		local t = {}
+		for face = 1, FACES do
+			t[face] = massTotal * portion[face]
+		end
+		print("masses: ${ut.tostring(t)}")
+	end
+	print()
+end
+
+--===== init =====--
+
+--===== process =====--
+statsPrint()
+
+massAdd(1, 10)
+statsPrint()
+
+--massAdd(1, 10)
+--statsPrint()
+
+--massAdd(1, -10)
+--statsPrint()
+
+
+--===== result =====--
+
+
+	

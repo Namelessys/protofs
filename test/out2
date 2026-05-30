@@ -1,0 +1,36 @@
+
+
+
+
+
+
+Cell1: {
+  ['substances'] = {
+    ['salt'] = 10,
+    ['water'] = 20,
+  },
+  ['faces'] = {
+    [1] = {
+      ['portion'] = 0.5,
+    },
+    [2] = {
+      ['portion'] = 0.5,
+    },
+  },
+}
+
+Cell2: {
+  ['substances'] = {
+    ['salt'] = 10,
+    ['water'] = 20,
+  },
+  ['faces'] = {
+    [1] = {
+      ['portion'] = 0.5,
+    },
+    [2] = {
+      ['portion'] = 0.5,
+    },
+  },
+}
+

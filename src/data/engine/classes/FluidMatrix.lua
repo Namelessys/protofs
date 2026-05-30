@@ -19,21 +19,23 @@ end
 function FluidMatrix:update(dt)
 	local matrix = self.matrix
 	
-	local totalQuantity = 0
-	local totalEnergy = 0
+	local totalQuantity, totalEnergy, totalStaticForce, totalTemperature = 0, 0, 0, 0
 
 	for x = 1, self.sizeX do
 		for y = 1, self.sizeY do
 			matrix[x][y]:update(dt, self)
 			
 			totalQuantity = totalQuantity + matrix[x][y]:getQuantity()
-			totalEnergy = totalEnergy + matrix[x][y]:getPressure()
-			totalEnergy = totalEnergy + matrix[x][y]:getFlowForce(1)
-			totalEnergy = totalEnergy + matrix[x][y]:getFlowForce(2)
+			totalStaticForce = totalStaticForce + matrix[x][y]:getStaticForce()
+			
+			totalTemperature = totalTemperature + matrix[x][y]:getTemperature()
+			totalEnergy = totalEnergy + math.abs(matrix[x][y]:getFlowForce(1))
+			totalEnergy = totalEnergy + math.abs(matrix[x][y]:getFlowForce(2))
 		end
 	end
 	
-	debug.dlog("total: quantity: " .. tostring(totalQuantity) .. ", energy: " .. tostring(totalEnergy))
+	debug.dlog("total: quantity: " .. tostring(totalQuantity) .. ", staticForce: " .. tostring(totalStaticForce))
+	debug.dlog("total: temperature: " .. tostring(totalTemperature) .. ", energy: " .. tostring(totalEnergy))
 end
 
 function FluidMatrix:draw(offsetX, offsetY, scaleX, scaleY, gab)

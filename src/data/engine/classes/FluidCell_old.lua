@@ -70,16 +70,79 @@ function FluidCell:update(dt, matrix)
 	local addedQuantity = 0
 	
 	for face = 1, FACE_COUNT do
-		local neighborCell = currentNeighborCells[face]
-		if not neighborCell then 
+		local cnc = currentNeighborCells[face]
+		if not cnc then 
 			nextCell:setFlowVelocity(face, 0)
 		else
+			--self:log("face: " .. face)
+			
+			local addedVelocityForce, addedMomentum = 0, 0
+			local momentumLoss, addedTempretature
+			local newVelocity = self:getFlowVelocity(face)
+			local newMomentum = self:getMomentum(face)
+			
+			local staticForceDiff = self:getStaticForce() - cnc:getStaticForce()
+			local flowForceDiff = self:getFlowForce(face) - cnc:getFlowForce(getOpositeFace(face))
+			local momentumDiff = self:getMomentum(face) - cnc:getMomentum(getOpositeFace(face))
+			local velocityDiff = self:getFlowVelocity(face) - cnc:getFlowVelocity(getOpositeFace(face))
+			
+			--self:log(self:getMomentum(face), cnc:getMomentum(getOpositeFace(face)))
+			
+			local faceMass = self:getMass() / FACE_COUNT
+			
+			if faceMass <= 0 or staticForceDiff <= 0 then
+				--addedMomentum = 0
+			else
+				--addedMomentum = staticForceDiff / faceMass
+			end
+			--newVelocity = newVelocity + addedMomentum
 			
 			
+			
+			local viscosityFactor = 1 --= self:getViscosity() * velocityDiff
+			
+			self:log(velocityDiff, viscosityFactor)
+			
+			
+			addedMomentum = addedMomentum - self:getMomentum(face) / (2 * viscosityFactor)
+			addedMomentum = addedMomentum - cnc:getMomentum(getOpositeFace(face)) / (2 * viscosityFactor)
+			newMomentum = newMomentum + addedMomentum
+			
+			self:log(addedMomentum, newMomentum)
+			
+			
+			
+			
+			
+			if self:getFlowVelocity(face) > 0 then
+				local quantityDelta = self:getFlowVelocity(face) * (self:getQuantity() / FACE_COUNT)
+				
+				addedQuantity = addedQuantity - quantityDelta
+			end
+			
+			if cnc:getFlowVelocity(getOpositeFace(face)) > 0 then
+				local quantityDelta = cnc:getFlowVelocity(getOpositeFace(face)) * (cnc:getQuantity() / FACE_COUNT)
+
+				addedQuantity = addedQuantity + quantityDelta
+			end
+			
+			
+			newVelocity = newVelocity + newMomentum / (self:getMass() / FACE_COUNT)
+			
+			--newVelocity = newVelocity + addedVelocity
+			nextCell:setFlowVelocity(face, newVelocity)
 			
 		end
 	end
 	
+	if self:getQuantity() + addedQuantity < 0 then
+		debug.warn("quantity would get negative on cell: " .. self.x .. ", quantity: " .. self:getQuantity() + addedQuantity)
+		nextCell:setQuantity(0)	
+		nextCell:setTemperature(0)
+	else
+		nextCell:setQuantity(self:getQuantity() + addedQuantity)
+		nextCell:setTemperature(self:getTemperature() - addedQuantity)
+	end
 	
 	
 	--self:log(self:getFlowVelocity(1))

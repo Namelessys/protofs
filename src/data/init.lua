@@ -33,7 +33,7 @@ local function initFiles() --ToDo: abstract
 	global.Vector = loadfile("data/engine/classes/Vector.lua")()
 	
 	global.fse = loadfile("data/engine/fse.lua")()
-	global.fse.init(70, 1)
+	global.fse.init(2, 1)
 	
 	global.main = loadfile("data/engine/main.lua")()
 	global.main.init(fse, renderer)

@@ -25,7 +25,7 @@ function fse.update(dt)
 	debug.setFuncPrefix("[FSE_UPDATE]")
 	
 	if global.simulatePhysics then
-		fse.matrices[fse.currentMatrix]:update(dt)
+		fse.matrices[fse.currentMatrix]:update(1)
 		
 		if fse.currentMatrix + 1 > #fse.matrices then
 			fse.currentMatrix = 1

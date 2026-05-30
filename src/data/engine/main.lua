@@ -23,7 +23,9 @@ function love.update(dt)
 	global.noname.update(dt)
 	global.bladi.update(dt)
 	
-	global.fse.update(dt)
+	for c = 1, 1 do
+		global.fse.update(dt)
+	end
 end
 
 function love.draw()

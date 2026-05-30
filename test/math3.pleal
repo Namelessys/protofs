@@ -1,0 +1,91 @@
+local ut = require("UT")
+
+local FACES = 2
+local CELLS = 2
+
+local SUBSTANCES = {
+	water = 20,
+	salt = 10,
+}
+
+--local portion = {.5, .5}
+
+local cells = {}
+
+
+--===== init =====--
+for c = 1, CELLS do
+	local cellMassTotal = 0
+	
+	cells[c] = {
+		substances = {},
+		faces = {},
+	}
+	
+	for i, s in pairs(SUBSTANCES) do
+		cells[c].substances[i] = s
+		cellMassTotal = cellMassTotal + s
+	end
+	
+	for f = 1, FACES do
+		cells[c].faces[f] = {
+			portion = 1 / FACES,	
+		}
+	end
+end
+
+
+--===== functions =====--
+local function calculatePortions(cell, masses) 
+	
+end
+
+local function massAdd(cell, face, substances)
+	
+end
+local function massRemove(cell, face, massToRemove)
+	
+end
+
+local function statsPrint(streamErr)
+	--print("--===== stats =====--")
+	
+	
+	for cell = 1, CELLS do
+		local str = "Cell${cell}: ${ut.tostring(cells[cell])}"
+		if streamErr then
+			io.stderr:write(str .. "\n\n")
+			io.stderr:flush()
+		else
+			print(str .. "\n")
+		end
+	end
+end
+
+--===== init =====--
+print("\n\n\n\n\n")
+io.stderr:write("\n\n\n\n\n\n")
+io.stderr:flush()
+
+--===== process =====--
+statsPrint(true)
+
+massRemove(cells[1], 2, 10)
+
+statsPrint()
+
+
+--massAdd(1, 10)
+
+
+--massAdd(1, 10)
+--statsPrint()
+
+--massAdd(1, -10)
+--statsPrint()
+
+
+--===== result =====--
+
+
+	

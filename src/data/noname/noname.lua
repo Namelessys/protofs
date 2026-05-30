@@ -13,6 +13,9 @@ function setQuantity(x, y, pressure)
 	global.fse.getCurrentCell(x, y):setQuantity(pressure)
 	global.fse.getNextCell(x, y):setQuantity(pressure)
 end
+function getQuantity(x, y)
+	return global.fse.getCurrentCell(x, y):getQuantity()
+end
 
 function noname.init()
 	--set the logging prefix inside the 'noname.init' function.
@@ -42,14 +45,21 @@ function noname.update(dt)
 	if noname.firstTick then
 		--noname.dyn.setWindowPos() --wayland
 
-		setQuantity(3, 1, 1)
-		--setQuantity(2, 1, .5)
+		setQuantity(1, 1, 1)
+		setQuantity(2, 1, 1)
+		
+		global.fse.getCurrentMatrix().matrix[1][1]:setFlowVelocity(2, 1)
 		
 		noname.firstTick = false
 	end
+	
+	setQuantity(2, 1, 1)
+	
+	
 
 	if input.keyDown("f") then
-		setQuantity(3, 1, 3)
+		--setQuantity(3, 1, getQuantity(3, 1) + 1)
+		setQuantity(1, 1, 1)
 	end
 
 	--print when the 'B' key is pressed or released

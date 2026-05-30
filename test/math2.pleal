@@ -1,0 +1,113 @@
+local ut = require("UT")
+
+local FACES = 2
+local CELLS = 2
+
+local SUBSTANCES = {
+	water = 20,
+	salt = 10,
+}
+
+--local portion = {.5, .5}
+
+local cells = {}
+
+
+--===== init =====--
+for c = 1, CELLS do
+	local cellMassTotal = 0
+	
+	cells[c] = {
+		substances = {},
+		faces = {},
+	}
+	
+	for i, s in pairs(SUBSTANCES) do
+		cells[c].substances[i] = s
+		cellMassTotal = cellMassTotal + s
+	end
+	
+	for f = 1, FACES do
+		cells[c].faces[f] = {
+			mass = cellMassTotal / FACES,	
+		}
+	end
+end
+
+
+--===== functions =====--
+local function massPerUnitGet(substances)
+	local massPerUnit
+	local massTotal = 0
+	local amountLeast = math.huge
+	
+	for s, a in pairs(substances) do
+		massTotal = massTotal + a
+		amountLeast = math.min(amountLeast, a)
+	end
+	massPerUnit = massTotal / amountLeast
+	
+	return massPerUnit, amountLeast
+end
+
+local function massAdd(cell, face, substances)
+	
+end
+local function massRemove(cell, face, massToRemove)
+	local face = cell.faces[face]
+	local massPerUnit, substanceMassLeast = massPerUnitGet(cell.substances)
+	local unitDivMult = 1 / substanceMassLeast
+	
+	face.mass = face.mass - massToRemove
+	
+	
+	
+	for s, m in pairs(cell.substances) do
+		cell.substances[s] = cell.substances[s] * unitDivMult * massToRemove
+	end
+	
+	return --removed substances
+end
+
+local function statsPrint(streamErr)
+	--print("--===== stats =====--")
+	
+	
+	for cell = 1, CELLS do
+		local str = "Cell${cell}: ${ut.tostring(cells[cell])}"
+		if streamErr then
+			io.stderr:write(str .. "\n\n")
+			io.stderr:flush()
+		else
+			print(str .. "\n")
+		end
+	end
+end
+
+--===== init =====--
+print("\n\n\n\n\n")
+io.stderr:write("\n\n\n\n\n\n")
+io.stderr:flush()
+
+--===== process =====--
+statsPrint(true)
+
+massRemove(cells[1], 2, 10)
+
+statsPrint()
+
+
+--massAdd(1, 10)
+
+
+--massAdd(1, 10)
+--statsPrint()
+
+--massAdd(1, -10)
+--statsPrint()
+
+
+--===== result =====--
+
+
+	
