@@ -70,7 +70,7 @@ io.stderr:flush()
 --===== process =====--
 statsPrint(true)
 
-massRemove(cells[1], 2, 10)
+massRemove()
 
 statsPrint()
 
