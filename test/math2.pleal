@@ -6,6 +6,7 @@ local CELLS = 2
 local SUBSTANCES = {
 	water = 20,
 	salt = 10,
+	viniger = 10,
 }
 
 --local portion = {.5, .5}
@@ -36,44 +37,54 @@ end
 
 
 --===== functions =====--
+local function massSubstancesGet(substances)
+	local massTotal = 0
+	for _, m in pairs(substances) do
+		massTotal = massTotal + m
+	end
+	return massTotal
+end
+
 local function massPerUnitGet(substances)
 	local massPerUnit
 	local massTotal = 0
 	local amountLeast = math.huge
+	local massMult, leastMult
 	
 	for s, a in pairs(substances) do
 		massTotal = massTotal + a
 		amountLeast = math.min(amountLeast, a)
 	end
-	massPerUnit = massTotal / amountLeast
+	leastMult = 1 / amountLeast
+	massPerUnit = massTotal * leastMult
+	massMult = 1 / massPerUnit
 	
-	return massPerUnit, amountLeast
+	return massPerUnit, massMult, leastMult
 end
 
 local function massAdd(cell, face, substances)
-	
+	cell.faces[face].mass = cell.faces[face].mass + massSubstancesGet(substances)
+	for s, m in pairs(substances) do
+		cell.substances[s] = cell.substances[s] + m
+	end
 end
+
 local function massRemove(cell, face, massToRemove)
-	local face = cell.faces[face]
-	local massPerUnit, substanceMassLeast = massPerUnitGet(cell.substances)
-	local unitDivMult = 1 / substanceMassLeast
-	
-	face.mass = face.mass - massToRemove
-	
-	
+	local _, massMult, leastMult = massPerUnitGet(cell.substances)
+	local unitsToRemove = massToRemove * massMult	
 	
 	for s, m in pairs(cell.substances) do
-		cell.substances[s] = cell.substances[s] * unitDivMult * massToRemove
+		cell.substances[s] = cell.substances[s] - m * leastMult * unitsToRemove
 	end
 	
-	return --removed substances
+	cell.faces[face].mass = cell.faces[face].mass - massToRemove
 end
 
 local function statsPrint(streamErr)
 	--print("--===== stats =====--")
 	
 	
-	for cell = 1, CELLS do
+	for cell = 1, CELLS - 1 do
 		local str = "Cell${cell}: ${ut.tostring(cells[cell])}"
 		if streamErr then
 			io.stderr:write(str .. "\n\n")
@@ -90,6 +101,10 @@ io.stderr:write("\n\n\n\n\n\n")
 io.stderr:flush()
 
 --===== process =====--
+statsPrint(true)
+
+massAdd(cells[1], 2, {water = 10, salt = 10})
+
 statsPrint(true)
 
 massRemove(cells[1], 2, 10)

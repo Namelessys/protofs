@@ -8,28 +8,30 @@ Cell1: {
   ['substances'] = {
     ['salt'] = 10,
     ['water'] = 20,
+    ['viniger'] = 10,
   },
   ['faces'] = {
     [1] = {
-      ['portion'] = 0.5,
+      ['mass'] = 20.0,
     },
     [2] = {
-      ['portion'] = 0.5,
+      ['mass'] = 20.0,
     },
   },
 }
 
-Cell2: {
+Cell1: {
   ['substances'] = {
-    ['salt'] = 10,
-    ['water'] = 20,
+    ['salt'] = 20,
+    ['water'] = 30,
+    ['viniger'] = 10,
   },
   ['faces'] = {
     [1] = {
-      ['portion'] = 0.5,
+      ['mass'] = 20.0,
     },
     [2] = {
-      ['portion'] = 0.5,
+      ['mass'] = 40.0,
     },
   },
 }

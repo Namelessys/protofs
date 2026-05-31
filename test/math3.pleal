@@ -1,11 +1,11 @@
 local ut = require("UT")
 
-local FACES = 2
+local FACES = 4
 local CELLS = 2
 
 local SUBSTANCES = {
-	water = 20,
-	salt = 10,
+	water = 0,
+	salt = 0,
 }
 
 --local portion = {.5, .5}
@@ -36,14 +36,59 @@ end
 
 
 --===== functions =====--
-local function calculatePortions(cell, masses) 
+local function massSubstancesGet(substances)
+	local massTotal = 0
+	for _, m in pairs(substances) do
+		massTotal = massTotal + m
+	end
+	return massTotal
+end
+
+local function massFacesGet(cell)
+	local faces = {}
+	local massCellTotal = massSubstancesGet(cell.substances)
 	
+	for f, p in ipairs(cell.faces) do
+		faces[f] = p.portion * massCellTotal
+	end
+	
+	return faces
+end
+
+local function portionsCalc(cell, massFaces) 
+	local massTotal = massSubstancesGet(cell.substances)
+	for f = 1, FACES do
+		cell.faces[f].portion = massFaces[f] / massTotal
+	end
 end
 
 local function massAdd(cell, face, substances)
+	local massFaces = massFacesGet(cell)
 	
+	massFaces[face] = massFaces[face] + massSubstancesGet(substances)
+	
+	for s, m in pairs(substances) do
+		cell.substances[s] = cell.substances[s] + m
+	end
+	
+	portionsCalc(cell, massFaces)
 end
-local function massRemove(cell, face, massToRemove)
+
+local function massRemove(cell, face, massToRemove) --nope :/
+	local massFaces = massFacesGet(cell)
+	local substancesRemoved = {}
+	local divMultSubstances = 1 / 2 --TODO: replace 2 with active substance number
+	
+	
+	massFaces[face] = massFaces[face] - massToRemove
+	
+	for s, m in pairs(cell.substances) do
+		local massFaceSubstance = m * cell.faces[face].portion
+		substancesRemoved[s] = massFaceSubstance * (divMultSubstances * massToRemove)
+		print(s, substancesRemoved[s])
+	end
+	
+	
 	
 end
 
@@ -70,7 +115,9 @@ io.stderr:flush()
 --===== process =====--
 statsPrint(true)
 
-massRemove()
+massAdd(cells[1], 1, {water = 20, salt = 10})
+--massAdd(cells[1], 2, {water = 20, salt = 10})
+massRemove(cells[1], 1, 10)
 
 statsPrint()
 
