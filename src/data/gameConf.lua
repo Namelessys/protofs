@@ -1,7 +1,7 @@
 local conf = {
 	dtFixed = 1,
 	
-	squareScaleX = 7,
+	squareScaleX = 70,
 	squareScaleY = 75,
 	squareGab = 1,
 	

@@ -70,16 +70,13 @@ end
 --    mirrorR flips the RIGHT state — for a RIGHT wall)
 --====================================================================
 
-function rusanovFlux(cellL, cellR, mirrorL, mirrorR)
-	local inverterL, inverterR = 1, 1
-	if mirrorL then inverterL = -1 end
-	if mirrorR then inverterR = -1 end
+function rusanovFlux(cellL, cellR)
 
 	-- 1. conserved state
 	local rhoL  = cellL:densityGet()
 	local rhoR  = cellR:densityGet()
-	local rhouL = inverterL * cellL:momentumGet()
-	local rhouR = inverterR * cellR:momentumGet()
+	local rhouL = cellL:momentumGet()
+	local rhouR = cellR:momentumGet()
 	local EL    = cellL:energyTotalGet()
 	local ER    = cellR:energyTotalGet()
 
@@ -134,7 +131,7 @@ function rusanovFlux(cellL, cellR, mirrorL, mirrorR)
 	flux.mom    = 0.5 * (FL_mom  + FR_mom)  - 0.5 * s_max * (rhouR - rhouL)
 	flux.energy = 0.5 * (FL_engy + FR_engy) - 0.5 * s_max * (ER     - EL)
 	flux.sMax = s_max
-	
+		
 	return flux
 end
 
@@ -151,15 +148,25 @@ function FluidCell:update(dt)
 	local fluxLeft, fluxRight
 
 	if nL then
-		fluxLeft = rusanovFlux(nL, self)                    -- neighbor is LEFT
+		fluxLeft = rusanovFlux(nL, self)
 	else
-		fluxLeft = rusanovFlux(self, self, true, false)            -- left wall: mirror LEFT
+		fluxLeft = {
+			rho = 0,
+			mom = self:pressureStaticGet(),
+			energy = 0,
+			sMax = self:waveSpeedGet()
+		}
 	end
 
 	if nR then
-		fluxRight = rusanovFlux(self, nR)                   -- neighbor is RIGHT
+		fluxRight = rusanovFlux(self, nR)
 	else
-		fluxRight = rusanovFlux(self, self, false, true)    -- right wall: mirror RIGHT
+		fluxRight = {
+			rho = 0,
+			mom = self:pressureStaticGet(),
+			energy = 0,
+			sMax = self:waveSpeedGet()
+		}
 	end
 
 	-- conserved update: gains (left face) minus losses (right face)
