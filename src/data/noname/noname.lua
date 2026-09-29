@@ -62,7 +62,7 @@ function noname.update(dt)
 
 	if input.keyPressed("f") then
 		--densitySet(3, 1, densityGet(3, 1) + 1)
-		densitySet(50, 1, 10)
+		densitySet(1, 1, 10)
 	end
 	if input.keyPressed("g") then
 		--densitySet(3, 1, densityGet(3, 1) + 1)
