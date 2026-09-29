@@ -7,11 +7,8 @@ local SIZE_CELL = global.conf.SIZE_CELL
 local FACES = 2
 local DEPTH = 1
 
-local UNIVERSAL_GAS_CONSTANT = 8.31446261815324
-
-local MOLAR_MASS = 0.02897 -- average of dry air
-local R_GAS = UNIVERSAL_GAS_CONSTANT / MOLAR_MASS
 local GAMMA = 1.4
+local R_GAS = 287.0
 local CV = R_GAS / (GAMMA - 1)   -- ≈ 718 J/(kg·K)
 
 local RHO_FLOOR        = 1e-8    -- getter floor
@@ -53,7 +50,7 @@ function FluidCell.new(x, y)
 
 	--===== dynamic vars (conserved state) =====--
 	local T_INIT = 293.0
-	self.density = 1.1
+	self.density = .1
 	self.momentum = 0
 	-- self-consistent start: E = rho*cv*T  (NOT 0, NOT .1)
 	self.energyTotal = self.density * CV * T_INIT
@@ -184,48 +181,6 @@ function FluidCell:update(dt)
 end
 
 --====================================================================
--- state values / setters
---====================================================================
-
-function FluidCell:momentumGet()
-	return self.momentum
-end
-
-function FluidCell:energyTotalGet()
-	return self.energyTotal
-end
-
-function FluidCell:densityGet()
-	return max(self.density, RHO_FLOOR)
-end
-
-function FluidCell:densitySet(newDensity)
-	newDensity = max(newDensity, RHO_FLOOR_UPDATE)
-
-	local rhoOld = self.density
-	local rhou   = self.momentum
-
-	-- specific internal energy per kg: e = (E - K_old) / rho_old
-	local eInt = (self.energyTotal - (rhou * rhou) / (2 * max(rhoOld, RHO_FLOOR)))
-	             / max(rhoOld, RHO_FLOOR)
-
-	self.density = newDensity
-
-	-- rebuild energy with the NEW density:
-	-- kinetic from conserved momentum, internal from preserved e
-	local K_new = (rhou * rhou) / (2 * newDensity)
-	self.energyTotal = eInt * newDensity + K_new
-end
-
--- atomic, self-consistent initialization (rho, T, u together)
-function FluidCell:initState(rho, T, u)
-	self.density  = max(rho, RHO_FLOOR_UPDATE)
-	self.momentum = (u or 0) * self.density
-	self.energyTotal = self.density * CV * T
-	   + (self.momentum * self.momentum) / (2 * self.density)
-end
-
---====================================================================
 -- derived values
 --====================================================================
 
@@ -275,6 +230,48 @@ function FluidCell:volumeGet()
 end
 
 --====================================================================
+-- state values / setters
+--====================================================================
+
+function FluidCell:momentumGet()
+	return self.momentum
+end
+
+function FluidCell:energyTotalGet()
+	return self.energyTotal
+end
+
+function FluidCell:densityGet()
+	return max(self.density, RHO_FLOOR)
+end
+
+function FluidCell:densitySet(newDensity)
+	newDensity = max(newDensity, RHO_FLOOR_UPDATE)
+
+	local rhoOld = self.density
+	local rhou   = self.momentum
+
+	-- specific internal energy per kg: e = (E - K_old) / rho_old
+	local eInt = (self.energyTotal - (rhou * rhou) / (2 * max(rhoOld, RHO_FLOOR)))
+	             / max(rhoOld, RHO_FLOOR)
+
+	self.density = newDensity
+
+	-- rebuild energy with the NEW density:
+	-- kinetic from conserved momentum, internal from preserved e
+	local K_new = (rhou * rhou) / (2 * newDensity)
+	self.energyTotal = eInt * newDensity + K_new
+end
+
+-- atomic, self-consistent initialization (rho, T, u together)
+function FluidCell:initState(rho, T, u)
+	self.density  = max(rho, RHO_FLOOR_UPDATE)
+	self.momentum = (u or 0) * self.density
+	self.energyTotal = self.density * CV * T
+	                  + (self.momentum * self.momentum) / (2 * self.density)
+end
+
+--====================================================================
 -- draw (unchanged except floor-consistent getters)
 --====================================================================
 
@@ -284,9 +281,12 @@ function FluidCell:draw(posX, posY, offsetX, offsetY, scaleX, scaleY, gab)
 
 	do --pressure overlay
 		local colorMult = global.conf.pressureOverlayColorMult
-		local rho = self:densityGet()   -- floored: never < 0, never == 0
-		
-		self.color = {min(rho * colorMult, 1), 0, 1 - min(rho * colorMult, 1), 1}
+		local d = self:densityGet()   -- floored: never < 0, never == 0
+		if d < 0.5 * RHO_FLOOR_UPDATE then
+			self.color = {1, 1, 1, 1}   -- near-vacuum: white
+		else
+			self.color = {min(d * colorMult, 1), 0, 1 - min(d * colorMult, 1), 1}
+		end
 
 		love.graphics.setColor(self.color)
 		love.graphics.rectangle("fill",
@@ -300,32 +300,16 @@ function FluidCell:draw(posX, posY, offsetX, offsetY, scaleX, scaleY, gab)
 			local renderPosY = renderPosY + 75
 
 			love.graphics.setColor({0, 0, 0, 1})
-			--love.graphics.print("M " .. tostring(rho):sub(1, 5), renderPosX + scaleX / 10, renderPosY - 4 + scaleY / 10, 0, 1.3, 1.3)
+			love.graphics.print("M " .. tostring(d):sub(1, 5), renderPosX + scaleX / 10, renderPosY - 4 + scaleY / 10, 0, 1.3, 1.3)
 		end
 	end
 
 	do --flow overlay
 		if global.conf.debug.textRender.velocities then
-			local colorMult = global.conf.velocityOverlayColorMult
-			
-			local uh = self:velocityGet() 
-			if uh < 0 then
-				self.color = {min(math.abs(uh) * colorMult, 1), 0, 0, 1}
-			else
-				self.color = {0, min(uh* colorMult, 1), 0, 1}
-			end
-
-			love.graphics.setColor(self.color)
-			love.graphics.rectangle("fill",
-				renderPosX,
-				renderPosY + scaleY + gab,
-				scaleX,
-				scaleY
-			)	
-			
+			local renderPosY = renderPosY + 75
 
 			love.graphics.setColor({0, 0, 0, 1})
-			--love.graphics.print("V¹ " .. tostring(self:velocityGet()), renderPosX + scaleX / 10, renderPosY + 15 + scaleY / 10, 0, 1.3, 1.3)
+			love.graphics.print("V¹ " .. tostring(self:velocityGet()), renderPosX + scaleX / 10, renderPosY + 15 + scaleY / 10, 0, 1.3, 1.3)
 		end
 	end
 end

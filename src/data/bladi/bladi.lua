@@ -13,7 +13,7 @@ function bladi.init()
 	debug.setFuncPrefix("[BLADI][INIT]") 
 	
 	--do some logging
-	debug.log("##### BLADI INIT START #####")
+	debug.log("##### INIT START #####")
 	
 	--execute all files inside 'data/bladi/init' in specific order.
 	debug.log("Execute init dir")
@@ -27,14 +27,10 @@ function bladi.init()
 		execute = true,
 	})
 	
-	--dump the 'bladi.dyn' table
-	do
-		debug.log("Dumping 'bladi.dyn' table")
-		
-		--use the 'tostring' function from the UserfulThings library to convert the 'bladi.dyn' table into a human readable string.
-		local serializedTable = ut.tostring(bladi.dyn)
-		debug.log(serializedTable)
-	end
+
+	--use the 'tostring' function from the UserfulThings library to convert the 'bladi.dyn' table into a human readable string.
+	local serializedTable = ut.tostring(bladi.dyn)
+	debug.log(serializedTable)
 	
 	--some other logging functions
 	debug.dlog("Some color highlighting")
@@ -43,7 +39,7 @@ function bladi.init()
 	debug.crucial("Something went very wrong")
 	--debug.fatal("Okay lets just stop here") --stops the program.
 	
-	debug.log("##### BLADI INIT DONE #####")
+	debug.log("##### INIT DONE #####")
 end
 
 function bladi.update(dt)
@@ -51,8 +47,8 @@ function bladi.update(dt)
 	
 	--print when the 'B' key is pressed or released
 	if input.keyDown("b") then
-		debug.log("B key just got pressed")
-	elseif input.keyReleased("b") then
+		debug.log("B key just got pressed down")
+	elseif input.keyUp("b") then
 		debug.log("B key just got released")
 	end
 	

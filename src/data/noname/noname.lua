@@ -39,8 +39,16 @@ function noname.init()
 		target = noname.dyn,
 		execute = true,
 	})
+	
+	debug.log("### MISC ###")
+	
+	local cg = noname.dyn.ColorGradiant.new({
+		lookup = {{0, 0, 0}, {0, 100, 0}}
+	})
+	
+	debug.dlog(cg.colorGet(.5))
 
-	debug.log("##### noname INIT DONE #####")
+	debug.log("##### INIT DONE #####")
 end
 
 
@@ -59,20 +67,21 @@ function noname.update(dt)
 	end
 	
 	
+	--densitySet(global.conf.sizeX, 1, 1)
 
 	if input.keyPressed("f") then
 		--densitySet(3, 1, densityGet(3, 1) + 1)
-		densitySet(1, 1, 10)
+		densitySet(1, 1, 100)
 	end
 	if input.keyPressed("g") then
 		--densitySet(3, 1, densityGet(3, 1) + 1)
-		densitySet(1, 1, 0.01)
+		densitySet(1, 1, 0.1)
 	end
 
 	--print when the 'B' key is pressed or released
 	if input.keyDown("b") then
 		debug.log("B key just got pressed")
-	elseif input.keyReleased("b") then
+	elseif input.keyUp("b") then
 		debug.log("B key just got released")
 	end
 end

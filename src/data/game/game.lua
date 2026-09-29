@@ -29,7 +29,6 @@ end
 
 function game.update(dt)
 	
-	
 	if input.keyDown("r") then
 		loadfile("data/init.lua")({reload = true})
 		isResetting = true

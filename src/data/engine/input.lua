@@ -17,7 +17,7 @@ function input.keyDown(key)
 		return false
 	end
 end
-function input.keyReleased(key)
+function input.keyUp(key)
 	if input.releasedKeys[key] == global.tick then
 		return true
 	else

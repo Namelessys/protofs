@@ -1,4 +1,4 @@
-local version = "v1.1.1"
+local version = "v1.1.1d" --bugfix
 
 local utf8 = require("utf8")
 local ut = require("UT")
@@ -150,8 +150,8 @@ local function loadDir(target, dir, logFuncs, overwrite, subDirs, structured, pr
 						if type(suc) == "function" then
 							local suc, returnValue = xpcall(suc, debug.traceback)
 							if suc == false then
-								err("Failed to execute: " .. name)
-								err(returnValue)
+								onError("Failed to execute: " .. name)
+								onError(returnValue)
 							else
 								target[name] = returnValue
 							end
@@ -161,7 +161,7 @@ local function loadDir(target, dir, logFuncs, overwrite, subDirs, structured, pr
 				
 				if suc == nil then 
 					failedFiles = failedFiles +1
-					err("Failed to load file: " .. dir .. "/" .. file .. ": " .. tostring(err))
+					onError("Failed to load file: " .. dir .. "/" .. file .. ": " .. tostring(err))
 				else
 					loadedFiles = loadedFiles +1
 					lowDataLoadingLog(debugString .. tostring(suc))
