@@ -45,7 +45,7 @@ end
 function FluidCell:update(dt, matrix)
 	--print("fluidCell" .. tostring(self.id) .. ": update")
 	
-	local nextCell = global.fse.getNextCell(self.x, self.y)
+	local nextCell = global.fse.nextCellGet(self.x, self.y)
 	
 	local currentNeighborCells = {}
 	local nextNeighborCells = {}
@@ -54,23 +54,23 @@ function FluidCell:update(dt, matrix)
 	
 	
 	
-	currentNeighborCells[1] = global.fse.getCurrentCell(self.x - 1, self.y - 1)
-	currentNeighborCells[2] = global.fse.getCurrentCell(self.x, self.y - 1)
-	currentNeighborCells[3] = global.fse.getCurrentCell(self.x + 1, self.y - 1)
-	currentNeighborCells[4] = global.fse.getCurrentCell(self.x + 1, self.y)
-	currentNeighborCells[5] = global.fse.getCurrentCell(self.x + 1, self.y + 1)
-	currentNeighborCells[6] = global.fse.getCurrentCell(self.x, self.y + 1)
-	currentNeighborCells[7] = global.fse.getCurrentCell(self.x - 1, self.y + 1)
-	currentNeighborCells[8] = global.fse.getCurrentCell(self.x - 1, self.y)
+	currentNeighborCells[1] = global.fse.currentCellGet(self.x - 1, self.y - 1)
+	currentNeighborCells[2] = global.fse.currentCellGet(self.x, self.y - 1)
+	currentNeighborCells[3] = global.fse.currentCellGet(self.x + 1, self.y - 1)
+	currentNeighborCells[4] = global.fse.currentCellGet(self.x + 1, self.y)
+	currentNeighborCells[5] = global.fse.currentCellGet(self.x + 1, self.y + 1)
+	currentNeighborCells[6] = global.fse.currentCellGet(self.x, self.y + 1)
+	currentNeighborCells[7] = global.fse.currentCellGet(self.x - 1, self.y + 1)
+	currentNeighborCells[8] = global.fse.currentCellGet(self.x - 1, self.y)
 	
-	nextNeighborCells[1] = global.fse.getNextCell(self.x - 1, self.y - 1)
-	nextNeighborCells[2] = global.fse.getNextCell(self.x, self.y - 1)
-	nextNeighborCells[3] = global.fse.getNextCell(self.x + 1, self.y - 1)
-	nextNeighborCells[4] = global.fse.getNextCell(self.x + 1, self.y)
-	nextNeighborCells[5] = global.fse.getNextCell(self.x + 1, self.y + 1)
-	nextNeighborCells[6] = global.fse.getNextCell(self.x, self.y + 1)
-	nextNeighborCells[7] = global.fse.getNextCell(self.x - 1, self.y + 1)
-	nextNeighborCells[8] = global.fse.getNextCell(self.x - 1, self.y)
+	nextNeighborCells[1] = global.fse.nextCellGet(self.x - 1, self.y - 1)
+	nextNeighborCells[2] = global.fse.nextCellGet(self.x, self.y - 1)
+	nextNeighborCells[3] = global.fse.nextCellGet(self.x + 1, self.y - 1)
+	nextNeighborCells[4] = global.fse.nextCellGet(self.x + 1, self.y)
+	nextNeighborCells[5] = global.fse.nextCellGet(self.x + 1, self.y + 1)
+	nextNeighborCells[6] = global.fse.nextCellGet(self.x, self.y + 1)
+	nextNeighborCells[7] = global.fse.nextCellGet(self.x - 1, self.y + 1)
+	nextNeighborCells[8] = global.fse.nextCellGet(self.x - 1, self.y)
 	
 	
 	
@@ -118,7 +118,7 @@ function FluidCell:update(dt, matrix)
 		velocitySum = velocitySum + nextCell.flowVelocities[i]
 		nextCell.pressure = nextCell.mass
 		
-		nextCell.flowForces[i] = nextCell:getPressure() + nextCell.flowVelocities[i] * self.weight
+		nextCell.flowForces[i] = nextCell:pressureGet() + nextCell.flowVelocities[i] * self.weight
 		
 		self:log("Flow force difference: " .. flowForceDifferences[i])
 		self:log("Flow force: " .. self.flowForces[i])
@@ -135,12 +135,12 @@ function FluidCell:update(dt, matrix)
 	
 	--[[
 	-- gravity
-	if self.y < 10 and self:getPressure() > 0 then 
+	if self.y < 10 and self:pressureGet() > 0 then 
 		local otherCell = global.fse.matrices[global.fse.nextMatrix].matrix[self.x][self.y + 1]
 		local flowRate = .01
 		
-		otherCell:setPressure(otherCell:getPressure() + math.min(self:getPressure(), flowRate))
-		self:setPressure(math.max(self:getPressure() - flowRate, 0))
+		otherCell:pressureSet(otherCell:pressureGet() + math.min(self:pressureGet(), flowRate))
+		self:pressureSet(math.max(self:pressureGet() - flowRate, 0))
 	end
 	
 	
@@ -158,15 +158,15 @@ function FluidCell:update(dt, matrix)
 			rightCell = global.fse.matrices[global.fse.nextMatrix].matrix[self.x + 1][self.y]
 		end
 		
-		if leftCell ~= nil and self:getPressure() > leftCell:getPressure() then
-			local diff = self:getPressure() - leftCell:getPressure()
-			leftCell:setPressure(leftCell:getPressure() + diff / 2)
-			self:setPressure(self:getPressure() - diff / 2)
+		if leftCell ~= nil and self:pressureGet() > leftCell:pressureGet() then
+			local diff = self:pressureGet() - leftCell:pressureGet()
+			leftCell:pressureSet(leftCell:pressureGet() + diff / 2)
+			self:pressureSet(self:pressureGet() - diff / 2)
 		end
-		if rightCell ~= nil and self:getPressure() > rightCell:getPressure() then
-			local diff = self:getPressure() - rightCell:getPressure()
-			rightCell:setPressure(rightCell:getPressure() + diff / 2)
-			self:setPressure(self:getPressure() - diff / 2)
+		if rightCell ~= nil and self:pressureGet() > rightCell:pressureGet() then
+			local diff = self:pressureGet() - rightCell:pressureGet()
+			rightCell:pressureSet(rightCell:pressureGet() + diff / 2)
+			self:pressureSet(self:pressureGet() - diff / 2)
 		end
 			
 	end
@@ -179,12 +179,12 @@ function FluidCell:draw(posX, posY, offsetX, offsetY, scale, gab)
 	
 	do --pressure overlay
 		local colorMult = math.max(global.conf.pressureOverlayColorMult, global.conf.pressureOverlayColorMult)
-		if self:getPressure() == 0 then
+		if self:pressureGet() == 0 then
 			self.color = {1, 1, 1, 0}
-		elseif self:getPressure() <= 0.5 / colorMult then
-			self.color = {self:getPressure() * 2 * colorMult, 1, 0}
+		elseif self:pressureGet() <= 0.5 / colorMult then
+			self.color = {self:pressureGet() * 2 * colorMult, 1, 0}
 		else
-			self.color = {1, 2 - (self:getPressure() * 2 - .1 / colorMult) * colorMult, 0}
+			self.color = {1, 2 - (self:pressureGet() * 2 - .1 / colorMult) * colorMult, 0}
 		end
 	end
 	
@@ -203,10 +203,10 @@ end
 function FluidCell:setMass(value)
 	self.mass = value
 end
-function FluidCell:getPressure()
+function FluidCell:pressureGet()
 	return self.pressure
 end
-function FluidCell:setPressure(value)
+function FluidCell:pressureSet(value)
 	self.pressure = value
 end
 
@@ -221,10 +221,10 @@ function FluidCell:setFlowForce(side, force)
 	self.flowForces[side] = force
 end
 
-function FluidCell:getDebug()
+function FluidCell:debugGet()
 	return self.debug
 end
-function FluidCell:setDebug(active)
+function FluidCell:debugSet(active)
 	self.debug = active
 end
 

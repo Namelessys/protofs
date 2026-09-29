@@ -2,53 +2,54 @@ local game = {}
 
 debug.setFuncPrefix("[GAME]", nil, nil, 1)
 
-function setPressure(x, y, pressure)
-	global.fse.getCurrentCell(x, y):setPressure(pressure)
-	global.fse.getNextCell(x, y):setPressure(pressure)
-end
-function setMass(x, y, mass)
-	global.fse.getCurrentCell(x, y):setMass(mass)
-	global.fse.getNextCell(x, y):setMass(mass)
+function densitySet(x, y, pressure)
+	global.fse.currentCellGet(x, y):densitySet(pressure)
+	global.fse.nextCellGet(x, y):densitySet(pressure)
 end
 
 function game.init(dt)
 	--debug.setFuncPrefix("[INIT]")
 	--debug.log("TEST")
 	
-	--global.fse.getCurrentCell(5, 5):setDebug(true)
-	--global.fse.getNextCell(5, 5):setDebug(true)
+	--global.fse.currentCellGet(5, 5):debugSet(true)
+	--global.fse.nextCellGet(5, 5):debugSet(true)
 	
 	
 	--setMass(2, 5, 1)
-	--setPressure(4, 4, .5)
+	--densitySet(4, 4, .5)
 	
 	
 	
 	
 	for c = 1, 10 do
-		--global.fse.matrices[1].matrix[c][1]:setPressure(c * .1)
-		--global.fse.matrices[2].matrix[c][1]:setPressure(c * .1)
+		--global.fse.matrices[1].matrix[c][1]:densitySet(c * .1)
+		--global.fse.matrices[2].matrix[c][1]:densitySet(c * .1)
 	end
 end
 
 function game.update(dt)
 	
 	
-	if input.keyPressed("r") then
+	if input.keyDown("r") then
 		loadfile("data/init.lua")({reload = true})
 		isResetting = true
 	end
 	
-	global.simulatePhysics = false
-	if input.keyPressed("c") then
+	if input.keyDown("p") then
+		global.simulationPaused = !global.simulationPaused
+	end
+	
+	global.simulatePhysics = !global.simulationPaused
+		
+	if input.keyDown("c") then
 		print("Tick: " .. global.fse.currentMatrix)
 		global.simulatePhysics = true
 	end
-	if input.keyDown("v") then
+	if input.keyPressed("v") then
 		print("Tick: " .. global.fse.currentMatrix)
 		global.simulatePhysics = true
 	end
-	if input.keyPressed("m") then
+	if input.keyDown("m") then
 		if global.fse.currentMatrixRender == 1 then
 			global.fse.currentMatrixRender = 2
 		else
@@ -56,8 +57,8 @@ function game.update(dt)
 		end
 	end
 	
-	--global.fse.getCurrentCell(3, 3):setPressure(.01)
-	--print(global.fse.getCurrentCell(3, 5):getPressure())
+	--global.fse.currentCellGet(3, 3):densitySet(.01)
+	--print(global.fse.currentCellGet(3, 5):pressureGet())
 	
 	
 	

@@ -9,12 +9,16 @@ local noname = {
 	firstTick = true,
 }
 
-function setQuantity(x, y, pressure)
-	global.fse.getCurrentCell(x, y):setQuantity(pressure)
-	global.fse.getNextCell(x, y):setQuantity(pressure)
+function densitySet(x, y, pressure)
+	global.fse.currentCellGet(x, y):densitySet(pressure)
+	global.fse.nextCellGet(x, y):densitySet(pressure)
+	
+	--global.fse.currentCellGet(x, y).energyTotal = 0
+	--global.fse.nextCellGet(x, y).energyTotal = 0
+	
 end
-function getQuantity(x, y)
-	return global.fse.getCurrentCell(x, y):getQuantity()
+function densityGet(x, y)
+	return global.fse.currentCellGet(x, y):densityGet()
 end
 
 function noname.init()
@@ -45,25 +49,28 @@ function noname.update(dt)
 	if noname.firstTick then
 		--noname.dyn.setWindowPos() --wayland
 
-		setQuantity(1, 1, 1)
-		setQuantity(2, 1, 1)
+		densitySet(1, 1, 100)
+		--densitySet(2, 1, 0.1)
 		
-		global.fse.getCurrentMatrix().matrix[1][1]:setFlowVelocity(2, 1)
+		
+		--global.fse.currentMatrixGet().matrix[1][1]:flowVelocitySet(2, 1)
 		
 		noname.firstTick = false
 	end
 	
-	setQuantity(2, 1, 1)
-	
 	
 
-	if input.keyDown("f") then
-		--setQuantity(3, 1, getQuantity(3, 1) + 1)
-		setQuantity(1, 1, 1)
+	if input.keyPressed("f") then
+		--densitySet(3, 1, densityGet(3, 1) + 1)
+		densitySet(50, 1, 10)
+	end
+	if input.keyPressed("g") then
+		--densitySet(3, 1, densityGet(3, 1) + 1)
+		densitySet(1, 1, 0.01)
 	end
 
 	--print when the 'B' key is pressed or released
-	if input.keyPressed("b") then
+	if input.keyDown("b") then
 		debug.log("B key just got pressed")
 	elseif input.keyReleased("b") then
 		debug.log("B key just got released")

@@ -1,5 +1,9 @@
 local global = {
-	org = {}
+	
+	
+	org = {},
+	simulatePhysics = false,
+	simulationPaused = true,
 }
 
 local pleal = require("plealTranspilerAPI")

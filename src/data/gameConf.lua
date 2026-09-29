@@ -1,7 +1,9 @@
 local conf = {
-	squareScaleX = 75,
+	dtFixed = 1,
+	
+	squareScaleX = 7,
 	squareScaleY = 75,
-	squareGab = 5,
+	squareGab = 1,
 	
 	pressureOverlayColorMult = .3,
 	minPressureColorMult = .00000000001, --to prevent dividing my 0 if pressureColorMult should be 0 at some point.
@@ -11,7 +13,10 @@ local conf = {
 			quantity = true,
 			velocities = true
 		}
-	}
+	},
+	
+	SIZE_CELL = .01,
+	USE_PRECONDITIONED_DT = false,
 }
 
 return conf

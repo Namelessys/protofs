@@ -50,15 +50,15 @@ function bladi.update(dt)
 	debug.setFuncPrefix("[BLADI][UPDATE]")
 	
 	--print when the 'B' key is pressed or released
-	if input.keyPressed("b") then
+	if input.keyDown("b") then
 		debug.log("B key just got pressed")
 	elseif input.keyReleased("b") then
 		debug.log("B key just got released")
 	end
 	
 	--set pressure at cell 3 3 to '.1' as long as the 'V' key is pressed down.
-	if input.keyDown("n") then
-		global.fse.setPressure(3, 3, .1)
+	if input.keyPressed("n") then
+		global.fse.pressureSet(3, 3, .1)
 	end
 end
 

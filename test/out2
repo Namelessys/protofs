@@ -5,11 +5,6 @@
 
 
 Cell1: {
-  ['substances'] = {
-    ['salt'] = 10,
-    ['water'] = 20,
-    ['viniger'] = 10,
-  },
   ['faces'] = {
     [1] = {
       ['mass'] = 20.0,
@@ -18,14 +13,14 @@ Cell1: {
       ['mass'] = 20.0,
     },
   },
+  ['substances'] = {
+    ['salt'] = 10,
+    ['water'] = 20,
+    ['viniger'] = 10,
+  },
 }
 
 Cell1: {
-  ['substances'] = {
-    ['salt'] = 20,
-    ['water'] = 30,
-    ['viniger'] = 10,
-  },
   ['faces'] = {
     [1] = {
       ['mass'] = 20.0,
@@ -33,6 +28,11 @@ Cell1: {
     [2] = {
       ['mass'] = 40.0,
     },
+  },
+  ['substances'] = {
+    ['salt'] = 20,
+    ['water'] = 30,
+    ['viniger'] = 10,
   },
 }
 

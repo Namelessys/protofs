@@ -1,0 +1,342 @@
+local FluidCell = {}
+
+local SIZE_CELL = 1
+local FACES = 2
+local DEPTH = 1
+local IDEAL_GAS_CONSTANT = 287
+local SOUND_SPEED = 1
+local RHO_FLOOR        = 1e-8    -- getter floor
+local RHO_FLOOR_UPDATE = 1e-6    -- update floor (was 1e-11 — too deep)
+local T_MIN = 1.0    -- K
+local T_MAX = 1e4    -- K; cap for pathological states (air at 1e4 K is 1000°C+)
+
+local GAMMA = 1.4
+local R_GAS = IDEAL_GAS_CONSTANT
+local CV = R_GAS / (GAMMA-1)
+
+local max = math.max
+local min = math.min
+
+local function getOpositeFace(face)
+	if face == 1 then
+		return 2
+	elseif face == 2 then
+		return 1
+	end
+end
+
+function FluidCell.new(x, y)
+	local self = setmetatable({}, {__index = FluidCell})
+
+	--===== debug =====--
+	_G.protofs.debugInfo.cellCount = _G.protofs.debugInfo.cellCount +1
+	self.id = _G.protofs.debugInfo.cellCount
+	self.color = {0, .3, .6}
+	
+	--===== metadata =====--
+	self.x = x
+	self.y = y
+	
+	self.size = 1
+
+	
+	--===== dynamic vars (recalculatet every tick) =====--
+	self.density = 0.1
+	self.momentum = 0
+	self.energyTotal = .1
+	
+	--===== internal state =====--
+	
+	--self.substances = {}
+	
+	
+	--[[
+	self.faceVelocities = {}
+	for i = 1, FACES do
+		self.faceVelocities[i] = 0
+	end
+	]]
+	
+	self.lastForceTimestamp = love.timer.getTime()
+	
+	--===== debug vars =====--
+	self.changeSteps = .01
+
+	return self
+end
+
+
+
+function rusanovFlux(cellL, cellR, mirrorL, mirrorR)
+	local inverterL, inverterR = 1, 1
+	if mirrorL then
+		inverterL = -1
+	end
+	if mirrorR then
+		inverterR = -1
+	end
+    ---------------------------------------------------------
+    -- 1. conserved state of both cells (what you store)
+    ---------------------------------------------------------
+    local rhoL  = cellL:densityGet()
+    local rhoR  = cellR:densityGet()
+    local rhouL = inverterL * cellL:momentumGet()
+    local rhouR = inverterR * cellR:momentumGet()
+    local EL    = cellL:energyTotalGet()      -- E = rho*e + 0.5*rho*u^2
+    local ER    = cellR:energyTotalGet()
+
+    ---------------------------------------------------------
+    -- 2. primitive + thermodynamic state (derived)
+    ---------------------------------------------------------
+    local uL = rhouL / rhoL
+    local uR = rhouR / rhoR
+    local pL = cellL:pressureStaticGet()      -- from your EOS
+    local pR = cellR:pressureStaticGet()
+    local cL = math.sqrt(GAMMA * R_GAS * cellL:temperatureGet())
+    local cR = math.sqrt(GAMMA * R_GAS * cellR:temperatureGet())
+
+    ---------------------------------------------------------
+    -- 3. largest signal speed (the fixed bug from before)
+    ---------------------------------------------------------
+    local s_max = math.max(
+        math.abs(uL) + cL + SOUND_SPEED,
+        math.abs(uR) + cR + SOUND_SPEED
+    )
+	 --[[
+	 local s_max = math.max(
+        math.abs(uL) + SOUND_SPEED,
+        math.abs(uR) + SOUND_SPEED
+    )
+	]]
+	 
+    ---------------------------------------------------------
+    -- 4. physical fluxes: F = [ rho*u , rho*u^2 + p , u*(E+p) ]
+    ---------------------------------------------------------
+    local FL_rho  = rhoL  * uL
+    local FL_mom  = rhouL * uL + pL
+    local FL_engy = uL * (EL + pL)
+
+    local FR_rho  = rhoR  * uR
+    local FR_mom  = rhouR * uR + pR
+    local FR_engy = uR * (ER + pR)
+	 
+	 print("rho", rhoL, rhoR)
+	 print("rhou", rhouL, rhouR)
+	 print("u", uL, uR)
+	 print("p", pL, pR)
+	 print("smax", s_max)
+	 print("F_rho", FL_rho, FR_rho)
+	 print("F_mom", FL_mom, FR_mom)
+	 
+    ---------------------------------------------------------
+    -- 5. Rusanov: average minus dissipation, per component
+    ---------------------------------------------------------
+    local flux = {}
+    flux.rho    = 0.5 * (FL_rho  + FR_rho)  - 0.5 * s_max * (rhoR  - rhoL)
+    flux.mom    = 0.5 * (FL_mom  + FR_mom)  - 0.5 * s_max * (rhouR - rhouL)
+    flux.energy = 0.5 * (FL_engy + FR_engy) - 0.5 * s_max * (ER     - EL)
+
+    return flux
+end
+
+
+function FluidCell:update(dt, matrix)
+	print("#######")	
+	dt = 0.001
+	
+	--print("fluidCell" .. tostring(self.id) .. ": update")
+	
+	local nextCell = global.fse.nextCellGet(self.x, self.y)
+	
+	local neighborCellsCurrent = {
+		global.fse.currentCellGet(self.x - 1, self.y),
+		global.fse.currentCellGet(self.x + 1, self.y),
+	}
+	local neighborCellsNext = {
+		global.fse.nextCellGet(self.x - 1, self.y),
+		global.fse.nextCellGet(self.x + 1, self.y),
+	}
+	
+	local faceDensities = {}
+	
+	local acceleration = 0
+	local facePressureStaticDiff = {}
+	local facePressureDynamicDiff = {}
+	
+	
+	local fluxLeft, fluxRight
+			
+	if neighborCellsCurrent[1] then
+		fluxLeft = rusanovFlux(neighborCellsCurrent[1], self)
+	else
+		fluxLeft = rusanovFlux(self, self, true)
+	end
+	if neighborCellsCurrent[2] then
+		fluxRight = rusanovFlux(self, neighborCellsCurrent[2])
+	else
+		fluxRight = rusanovFlux(self, self, true)
+	end
+	
+	local momentum = self.momentum
+	local density = self.density
+	local energyTotal = self.energyTotal
+	
+	
+	print(fluxLeft.mom, fluxRight.mom)
+	print(self.momentum - dt / SIZE_CELL * (fluxRight.mom - fluxLeft.mom))
+	print(fluxLeft.rho, fluxRight.rho)
+		
+	momentum = momentum - dt / SIZE_CELL * (fluxRight.mom - fluxLeft.mom)
+	density = math.max(0.00000000001, density - dt / SIZE_CELL * (fluxRight.rho - fluxLeft.rho))
+	energyTotal = energyTotal - dt / SIZE_CELL * (fluxRight.energy - fluxLeft.energy)
+
+	
+	nextCell.momentum = momentum
+	nextCell.density = density
+end
+
+function FluidCell:draw(posX, posY, offsetX, offsetY, scaleX, scaleY, gab)
+	local renderPosX = posX * scaleX + gab * posX + offsetX
+	local renderPosY = posY * scaleY + gab * posY + offsetY
+	
+	do --pressure overlay
+		local colorMult = math.max(global.conf.pressureOverlayColorMult, global.conf.pressureOverlayColorMult)
+		if self:densityGet() < 0 then
+			self.color = {0, 0, 0, 1}
+		elseif self:densityGet() == 0 then
+			self.color = {1, 1, 1, 1}
+		elseif self:densityGet() <= math.huge / colorMult then
+			self.color = {self:densityGet() * colorMult, 0, 1 - self:densityGet() * colorMult, 1}
+		else
+			--self.color = {1, 2 - (self:densityGet() * 2 - .1 / colorMult) * colorMult, 0}
+		end
+		
+		love.graphics.setColor(self.color)
+		love.graphics.rectangle("fill", 
+			renderPosX, 
+			renderPosY,
+			scaleX, 
+			scaleY
+		)
+		
+		if global.conf.debug.textRender.quantity then
+			local renderPosY = renderPosY + 75
+			
+			love.graphics.setColor({0, 0, 0, 1})
+			love.graphics.print("M " .. tostring(self:densityGet()):sub(1, 5), renderPosX + scaleX / 10, renderPosY - 4 + scaleY / 10, 0, 1.3, 1.3)
+		end
+	end
+	
+	do --flow overlay
+		if global.conf.debug.textRender.velocities then
+			local renderPosY = renderPosY + 75
+			
+			love.graphics.setColor({0, 0, 0, 1})
+			--love.graphics.print("V¹ " .. tostring(self:faceVelocityGet(1)), renderPosX + scaleX / 10, renderPosY + 15 + scaleY / 10, 0, 1.3, 1.3)
+			--love.graphics.print("V² " .. tostring(self:faceVelocityGet(2)), renderPosX + scaleX / 10, renderPosY + 30 + scaleY / 10, 0, 1.3, 1.3)
+			
+			
+			love.graphics.print("V¹ " .. tostring(self:velocityGet()), renderPosX + scaleX / 10, renderPosY + 15 + scaleY / 10, 0, 1.3, 1.3)
+			
+			--debug.dlog(self:velocityGet())
+			
+			
+			--love.graphics.print("M¹ " .. tostring(self:getMomentum(1)):sub(1, 5), renderPosX + scaleX / 10, renderPosY + 45 + scaleY / 10, 0, 1.3, 1.3)
+			--love.graphics.print("M² " .. tostring(self:getMomentum(2)):sub(1, 5), renderPosX + scaleX / 10, renderPosY + 60 + scaleY / 10, 0, 1.3, 1.3)
+		end
+	end
+end
+
+--===== dynamicaly generatet values =====--
+function FluidCell:kineticFromMomentum()
+   return (self:velocityGet() * self:velocityGet()) * (0.5 * self:densityGet())
+end
+function FluidCell:velocityGet()
+	return self:momentumGet() / self:densityGet()
+end
+
+function FluidCell:temperatureGet()
+	local e = (self:energyTotalGet() - self:kineticFromMomentum()) / self:densityGet()
+	local T = e / CV
+	if T ~= T then return T_MIN end              -- NaN guard (NaN ~= NaN is true)
+	return min(max(T, T_MIN), T_MAX)
+end
+
+function FluidCell:pressureStaticGet()
+	return self.density * IDEAL_GAS_CONSTANT * 1
+end
+
+function FluidCell:pressureDynamicGet(face)
+	local velocity = self.momentum / self.density
+	if face == 1 then
+		return -(0.5 * self.density * (velocity * velocity))
+	elseif face == 2 then
+		return 0.5 * self.density * (velocity * velocity)
+	end
+end
+
+function FluidCell:soundSpeedGet()
+	print("SPEED", GAMMA, R_GAS, self:temperatureGet())
+	return math.sqrt(GAMMA * R_GAS * self:temperatureGet())
+end
+function FluidCell:waveSpeedGet()
+	return math.abs(self:velocityGet()) + self:soundSpeedGet()
+end
+
+function FluidCell:volumeGet()
+	return self.size * DEPTH / FACES
+end
+
+--===== state values =====--
+function FluidCell:momentumGet() 
+	return self.momentum
+end
+function FluidCell:energyTotalGet()
+   return self.energyTotal
+end
+
+function FluidCell:densitySet(newDensity)
+	newDensity = max(newDensity, RHO_FLOOR_UPDATE)
+
+	local rhoOld = self.density
+	local rhou   = self.momentum
+
+	-- specific internal energy per kg: e = (E - K_old) / rho_old
+	local eInt = (self.energyTotal - (rhou * rhou) / (2 * max(rhoOld, RHO_FLOOR)))
+	             / max(rhoOld, RHO_FLOOR)
+
+	self.density = newDensity
+
+	-- new energies with the NEW density:
+	-- kinetic: same conserved momentum, different carrier mass
+	local K_new = (rhou * rhou) / (2 * newDensity)
+	-- internal: keep the specific internal energy (same temperature)
+	self.energyTotal = eInt * newDensity + K_new
+end
+function FluidCell:densityGet()
+	if self.density == 0 then
+		--debug.warn("Density = 0. Returning 0.0000000000001")
+		return  0.0000000000001
+	else
+		return self.density
+	end
+end
+
+
+--===== debug =====--
+function FluidCell:debugSet(active)
+	self.debug = active
+end
+function FluidCell:debugGet()
+	return self.debug
+end
+
+function FluidCell:log(...)
+	global.debug.setFuncPrefix("[Cell_" .. self.x .. "]")
+	if self.x == 1 or self.x == 2 then
+		debug.log(...)
+	end
+end
+
+
+return FluidCell

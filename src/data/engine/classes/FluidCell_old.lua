@@ -53,7 +53,7 @@ end
 function FluidCell:update(dt, matrix)
 	--print("fluidCell" .. tostring(self.id) .. ": update")
 	
-	local nextCell = global.fse.getNextCell(self.x, self.y)
+	local nextCell = global.fse.nextCellGet(self.x, self.y)
 	
 	local currentNeighborCells = {}
 	local nextNeighborCells = {}
@@ -61,30 +61,30 @@ function FluidCell:update(dt, matrix)
 	local flowForceDifferences = {}
 	
 	
-	currentNeighborCells[1] = global.fse.getCurrentCell(self.x - 1, self.y)
-	currentNeighborCells[2] = global.fse.getCurrentCell(self.x + 1, self.y)
+	currentNeighborCells[1] = global.fse.currentCellGet(self.x - 1, self.y)
+	currentNeighborCells[2] = global.fse.currentCellGet(self.x + 1, self.y)
 	
-	nextNeighborCells[1] = global.fse.getNextCell(self.x - 1, self.y)
-	nextNeighborCells[2] = global.fse.getNextCell(self.x + 1, self.y)
+	nextNeighborCells[1] = global.fse.nextCellGet(self.x - 1, self.y)
+	nextNeighborCells[2] = global.fse.nextCellGet(self.x + 1, self.y)
 	
 	local addedQuantity = 0
 	
 	for face = 1, FACE_COUNT do
 		local cnc = currentNeighborCells[face]
 		if not cnc then 
-			nextCell:setFlowVelocity(face, 0)
+			nextCell:flowVelocitySet(face, 0)
 		else
 			--self:log("face: " .. face)
 			
 			local addedVelocityForce, addedMomentum = 0, 0
 			local momentumLoss, addedTempretature
-			local newVelocity = self:getFlowVelocity(face)
+			local newVelocity = self:flowVelocityGet(face)
 			local newMomentum = self:getMomentum(face)
 			
 			local staticForceDiff = self:getStaticForce() - cnc:getStaticForce()
 			local flowForceDiff = self:getFlowForce(face) - cnc:getFlowForce(getOpositeFace(face))
 			local momentumDiff = self:getMomentum(face) - cnc:getMomentum(getOpositeFace(face))
-			local velocityDiff = self:getFlowVelocity(face) - cnc:getFlowVelocity(getOpositeFace(face))
+			local velocityDiff = self:flowVelocityGet(face) - cnc:flowVelocityGet(getOpositeFace(face))
 			
 			--self:log(self:getMomentum(face), cnc:getMomentum(getOpositeFace(face)))
 			
@@ -114,14 +114,14 @@ function FluidCell:update(dt, matrix)
 			
 			
 			
-			if self:getFlowVelocity(face) > 0 then
-				local quantityDelta = self:getFlowVelocity(face) * (self:getQuantity() / FACE_COUNT)
+			if self:flowVelocityGet(face) > 0 then
+				local quantityDelta = self:flowVelocityGet(face) * (self:densityGet() / FACE_COUNT)
 				
 				addedQuantity = addedQuantity - quantityDelta
 			end
 			
-			if cnc:getFlowVelocity(getOpositeFace(face)) > 0 then
-				local quantityDelta = cnc:getFlowVelocity(getOpositeFace(face)) * (cnc:getQuantity() / FACE_COUNT)
+			if cnc:flowVelocityGet(getOpositeFace(face)) > 0 then
+				local quantityDelta = cnc:flowVelocityGet(getOpositeFace(face)) * (cnc:densityGet() / FACE_COUNT)
 
 				addedQuantity = addedQuantity + quantityDelta
 			end
@@ -130,22 +130,22 @@ function FluidCell:update(dt, matrix)
 			newVelocity = newVelocity + newMomentum / (self:getMass() / FACE_COUNT)
 			
 			--newVelocity = newVelocity + addedVelocity
-			nextCell:setFlowVelocity(face, newVelocity)
+			nextCell:flowVelocitySet(face, newVelocity)
 			
 		end
 	end
 	
-	if self:getQuantity() + addedQuantity < 0 then
-		debug.warn("quantity would get negative on cell: " .. self.x .. ", quantity: " .. self:getQuantity() + addedQuantity)
-		nextCell:setQuantity(0)	
-		nextCell:setTemperature(0)
+	if self:densityGet() + addedQuantity < 0 then
+		debug.warn("quantity would get negative on cell: " .. self.x .. ", quantity: " .. self:densityGet() + addedQuantity)
+		nextCell:quantitySet(0)	
+		nextCell:temperatureSet(0)
 	else
-		nextCell:setQuantity(self:getQuantity() + addedQuantity)
-		nextCell:setTemperature(self:getTemperature() - addedQuantity)
+		nextCell:quantitySet(self:densityGet() + addedQuantity)
+		nextCell:temperatureSet(self:temperatureGet() - addedQuantity)
 	end
 	
 	
-	--self:log(self:getFlowVelocity(1))
+	--self:log(self:flowVelocityGet(1))
 end
 
 function FluidCell:draw(posX, posY, offsetX, offsetY, scaleX, scaleY, gab)
@@ -154,14 +154,14 @@ function FluidCell:draw(posX, posY, offsetX, offsetY, scaleX, scaleY, gab)
 	
 	do --pressure overlay
 		local colorMult = math.max(global.conf.pressureOverlayColorMult, global.conf.pressureOverlayColorMult)
-		if self:getQuantity() < 0 then
+		if self:densityGet() < 0 then
 			self.color = {0, 0, 0, 1}
-		elseif self:getQuantity() == 0 then
+		elseif self:densityGet() == 0 then
 			self.color = {1, 1, 1, 1}
-		elseif self:getQuantity() <= math.huge / colorMult then
-			self.color = {self:getQuantity() * colorMult, 0, 1 - self:getQuantity() * colorMult, 1}
+		elseif self:densityGet() <= math.huge / colorMult then
+			self.color = {self:densityGet() * colorMult, 0, 1 - self:densityGet() * colorMult, 1}
 		else
-			--self.color = {1, 2 - (self:getQuantity() * 2 - .1 / colorMult) * colorMult, 0}
+			--self.color = {1, 2 - (self:densityGet() * 2 - .1 / colorMult) * colorMult, 0}
 		end
 		
 		love.graphics.setColor(self.color)
@@ -176,7 +176,7 @@ function FluidCell:draw(posX, posY, offsetX, offsetY, scaleX, scaleY, gab)
 			local renderPosY = renderPosY + 75
 			
 			love.graphics.setColor({0, 0, 0, 1})
-			love.graphics.print("Q " .. tostring(self:getQuantity()):sub(1, 5), renderPosX + scaleX / 10, renderPosY - 4 + scaleY / 10, 0, 1.3, 1.3)
+			love.graphics.print("Q " .. tostring(self:densityGet()):sub(1, 5), renderPosX + scaleX / 10, renderPosY - 4 + scaleY / 10, 0, 1.3, 1.3)
 		end
 	end
 	
@@ -185,8 +185,8 @@ function FluidCell:draw(posX, posY, offsetX, offsetY, scaleX, scaleY, gab)
 			local renderPosY = renderPosY + 75
 			
 			love.graphics.setColor({0, 0, 0, 1})
-			love.graphics.print("V¹ " .. tostring(self:getFlowVelocity(1)):sub(1, 5), renderPosX + scaleX / 10, renderPosY + 15 + scaleY / 10, 0, 1.3, 1.3)
-			love.graphics.print("V² " .. tostring(self:getFlowVelocity(2)):sub(1, 5), renderPosX + scaleX / 10, renderPosY + 30 + scaleY / 10, 0, 1.3, 1.3)
+			love.graphics.print("V¹ " .. tostring(self:flowVelocityGet(1)):sub(1, 5), renderPosX + scaleX / 10, renderPosY + 15 + scaleY / 10, 0, 1.3, 1.3)
+			love.graphics.print("V² " .. tostring(self:flowVelocityGet(2)):sub(1, 5), renderPosX + scaleX / 10, renderPosY + 30 + scaleY / 10, 0, 1.3, 1.3)
 			
 			love.graphics.print("M¹ " .. tostring(self:getMomentum(1)):sub(1, 5), renderPosX + scaleX / 10, renderPosY + 45 + scaleY / 10, 0, 1.3, 1.3)
 			love.graphics.print("M² " .. tostring(self:getMomentum(2)):sub(1, 5), renderPosX + scaleX / 10, renderPosY + 60 + scaleY / 10, 0, 1.3, 1.3)
@@ -214,62 +214,62 @@ function FluidCell:getViscosity()
 	return self.viscosity
 end
 
-function FluidCell:getPressure()
-	return self:getQuantity() / self:getDensity()
+function FluidCell:pressureGet()
+	return self:densityGet() / self:getDensity()
 end
 function FluidCell:getMass()
-	return self:getQuantity() * self:getMassPerQuantity()
+	return self:densityGet() * self:getMassPerQuantity()
 end
 
 function FluidCell:getStaticForce(face)
-	return self:getPressure()
+	return self:pressureGet()
 end
 function FluidCell:getFlowForce(face)
-	return .5 * (self:getFlowVelocity(face) ^ 2) * (self:getMass() / FACE_COUNT )
+	return .5 * (self:flowVelocityGet(face) ^ 2) * (self:getMass() / FACE_COUNT )
 end
 function FluidCell:getMomentum(face)
-	return self:getFlowVelocity(face) * (self:getMass() / FACE_COUNT)
+	return self:flowVelocityGet(face) * (self:getMass() / FACE_COUNT)
 end
 
 
 --===== state values =====--
-function FluidCell:setSize(size)
+function FluidCell:sizeSet(size)
 	self.size = size
 end
-function FluidCell:getSize()
+function FluidCell:sizeGet()
 	return self.size
 end
-function FluidCell:setQuantity(quantity)
+function FluidCell:quantitySet(quantity)
 	self.quantity = quantity
 end
-function FluidCell:getQuantity()
+function FluidCell:densityGet()
 	return self.quantity
 end
-function FluidCell:setFlowVelocity(face, velocities)
+function FluidCell:flowVelocitySet(face, velocities)
 	self.flowVelocities[face] = velocities
 end
-function FluidCell:getFlowVelocity(face)
+function FluidCell:flowVelocityGet(face)
 	return self.flowVelocities[face]
 end
-function FluidCell:setFlowVelocities(velocities)
+function FluidCell:flowVelocitiesSet(velocities)
 	self.flowVelocities = velocities
 end
-function FluidCell:getFlowVelocities()
+function FluidCell:flowVelocitiesGet()
 	return self.flowVelocities
 end
 
-function FluidCell:setTemperature(temperature)
+function FluidCell:temperatureSet(temperature)
 	self.temperature = temperature
 end
-function FluidCell:getTemperature()
+function FluidCell:temperatureGet()
 	return self.temperature
 end
 
 --===== debug =====--
-function FluidCell:setDebug(active)
+function FluidCell:debugSet(active)
 	self.debug = active
 end
-function FluidCell:getDebug()
+function FluidCell:debugGet()
 	return self.debug
 end
 

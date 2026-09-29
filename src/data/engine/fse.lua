@@ -53,32 +53,32 @@ function fse.draw(offsetX, offsetY, scaleX, scaleY, gab)
 	end
 end
 
-function fse.getCurrentMatrix()
+function fse.currentMatrixGet()
 	return fse.matrices[fse.currentMatrix]
 end
-function fse.getNextMatrix()
+function fse.nextMatrixGet()
 	return fse.matrices[fse.nextMatrix]
 end
-function fse.getCurrentCell(x, y)
-	local matrixSizeX, matrixSizeY = fse.getCurrentMatrix():getSize()
+function fse.currentCellGet(x, y)
+	local matrixSizeX, matrixSizeY = fse.currentMatrixGet():sizeGet()
 	if x < 1 or y < 1 or x > matrixSizeX or y > matrixSizeY then
 		return false
 	end
-	return fse.getCurrentMatrix().matrix[x][y]
+	return fse.currentMatrixGet().matrix[x][y]
 end
-function fse.getNextCell(x, y)
-	local matrixSizeX, matrixSizeY = fse.getCurrentMatrix():getSize()
+function fse.nextCellGet(x, y)
+	local matrixSizeX, matrixSizeY = fse.currentMatrixGet():sizeGet()
 	if x < 1 or y < 1 or x > matrixSizeX or y > matrixSizeY then
 		return false
 	end
-	return fse.getNextMatrix().matrix[x][y]
+	return fse.nextMatrixGet().matrix[x][y]
 end
 
-function fse.setPressure(x, y, pressure)
-	fse.getNextCell(x, y):setPressure(pressure)
+function fse.pressureSet(x, y, pressure)
+	fse.nextCellGet(x, y):pressureSet(pressure)
 end
-function fse.getPressure(x, y, pressure)
-	fse.getCurrentCell(x, y):setPressure(pressure)
+function fse.pressureGet(x, y, pressure)
+	fse.currentCellGet(x, y):pressureSet(pressure)
 end
 
 return fse

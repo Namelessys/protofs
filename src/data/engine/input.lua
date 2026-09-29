@@ -3,14 +3,14 @@ local input = {
 	releasedKeys = {}
 }
 
-function input.keyDown(key)
+function input.keyPressed(key)
 	if input.pressedKeys[key] then
 		return true
 	else
 		return false
 	end
 end
-function input.keyPressed(key)
+function input.keyDown(key)
 	if input.pressedKeys[key] == global.tick then
 		return true
 	else

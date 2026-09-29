@@ -55,10 +55,10 @@ local function setSilenceMode(silence)
 	debug.silenceMode = silence
 end
 
-local function getDebugPrefix()
+local function debugGetPrefix()
 	return debug.internal.debugPrefix
 end
-local function setDebugPrefix(prefix)
+local function debugSetPrefix(prefix)
 	debug.internal.debugPrefix = tostring(prefix)
 end
 
@@ -181,16 +181,16 @@ local function plog(...)
 	end	
 	prefix = prefix .. ":"
 	
-	setInternalPrefix(getDebugPrefix() .. prefix .. " ")
+	setInternalPrefix(debugGetPrefix() .. prefix .. " ")
 	clog(...)
 	
-	setDebugPrefix("")
+	debugSetPrefix("")
 	return ...
 end
 local function err(...)
 	local silenceMode = debug.getSilenceMode()
 	debug.setSilenceMode(false)
-	setDebugPrefix("[ERROR]")
+	debugSetPrefix("[ERROR]")
 	setColors(debug.conf.terminalColors.err)
 	plog(...)
 	if silenceMode then
@@ -201,7 +201,7 @@ end
 local function crucial(...)
 	local silenceMode = debug.getSilenceMode()
 	debug.setSilenceMode(false)
-	setDebugPrefix("[CRUCIAL]")
+	debugSetPrefix("[CRUCIAL]")
 	setColors(debug.conf.terminalColors.crucial)
 	plog(...)
 	if silenceMode then
@@ -211,7 +211,7 @@ local function crucial(...)
 end
 local function fatal(...)
 	debug.setSilenceMode(false)
-	setDebugPrefix("[FATAL]")
+	debugSetPrefix("[FATAL]")
 	setColors(debug.conf.terminalColors.fatal)
 	plog(...)
 	io.stdout:write("\027[0m")
@@ -228,7 +228,7 @@ local function addDebugLogLevel(name, prefix, confLevelIndex)
 	if logLevel or logLevel == nil then
 		func = function(...)
 			setColors(debug.conf.terminalColors[name])
-			setDebugPrefix(prefix)
+			debugSetPrefix(prefix)
 			plog(...)
 			return ...
 		end
@@ -274,8 +274,8 @@ debug.getLogPrefix = getLogPrefix
 debug.setFuncPrefix = setFuncPrefix
 debug.getFuncPrefix = getFuncPrefix
 
-debug.setDebugPrefix = setDebugPrefix
-debug.getDebugPrefix = getDebugPrefix
+debug.debugSetPrefix = debugSetPrefix
+debug.debugGetPrefix = debugGetPrefix
 
 debug.setColors = setColors
 

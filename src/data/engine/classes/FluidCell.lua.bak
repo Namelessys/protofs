@@ -1,0 +1,214 @@
+-- FluidCell.lua — 1D density-based CFD cell (Rusanov flux, mirrored-wall boundaries)
+-- Love2D cell framework integration.
+
+local FluidCell = {}
+
+local SIZE_CELL = 1
+local FACES = 2
+local DEPTH = 1
+local RHO_FLOOR = 1e-13
+local RHO_FLOOR_UPDATE = 1e-11
+
+-- physical constants for air (single gas; multi-species later)
+local GAMMA = 1.4
+local R_GAS = 287.0
+local CV = R_GAS / (GAMMA - 1)   -- ≈ 718 J/(kg·K)
+
+local max = math.max
+local min = math.min
+local sqrt = math.sqrt
+local abs = math.abs
+
+--====================================================================
+-- construction
+--====================================================================
+
+function FluidCell.new(x, y)
+	local self = setmetatable({}, {__index = FluidCell})
+
+	--===== debug =====--
+	_G.protofs.debugInfo.cellCount = _G.protofs.debugInfo.cellCount + 1
+	self.id = _G.protofs.debugInfo.cellCount
+	self.color = {0, .3, .6}
+
+	--===== metadata =====--
+	self.x = x
+	self.y = y
+	self.size = 1
+
+	--===== dynamic vars (conserved state) =====--
+	local T_INIT = 293.0
+	self.density = .1
+	self.momentum = 0
+	self.energyTotal = self.density * CV * T_INIT
+
+	--===== internal state =====--
+	self.substances = {}
+	self.lastForceTimestamp = love.timer.getTime()
+
+	--===== debug vars =====--
+	self.changeSteps = .01
+
+	return self
+end
+
+--====================================================================
+-- helpers
+--====================================================================
+
+local function rhoSafe(rho)
+	return max(rho, RHO_FLOOR)
+end
+
+local function mirroredStateOf(state)
+	-- wall ghost: same density/pressure/energy, momentum flipped
+	local m = {}
+	for k, v in pairs(state) do m[k] = v end
+	m.momentum = -state.momentum
+	return m
+end
+
+--====================================================================
+-- rusanovFlux: one flux per face, plain-state interface
+-- state = { density, momentum, energy, pressure, soundSpeed }
+--====================================================================
+
+function rusanovFlux(stateL, stateR)
+	local rhoL, rhoR     = stateL.density,    stateR.density
+	local rhouL, rhouR   = stateL.momentum,   stateR.momentum
+	local EL, ER         = stateL.energy,     stateR.energy
+	local pL, pR         = stateL.pressure,   stateR.pressure
+	local cL, cR         = stateL.soundSpeed, stateR.soundSpeed
+
+	-- guarded velocities
+	local uL = rhouL / rhoSafe(rhoL)
+	local uR = rhouR / rhoSafe(rhoR)
+
+	-- largest signal speed: max(|u| + c) of both sides
+	local s_max = max(abs(uL) + cL, abs(uR) + cR)
+
+	-- physical fluxes
+	local FL_rho  = rhoL  * uL
+	local FL_mom  = rhouL * uL + pL
+	local FL_engy = uL * (EL + pL)
+
+	local FR_rho  = rhoR  * uR
+	local FR_mom  = rhouR * uR + pR
+	local FR_engy = uR * (ER + pR)
+
+	-- Rusanov: average minus dissipation, per component
+	local flux = {}
+	flux.rho    = 0.5 * (FL_rho  + FR_rho)  - 0.5 * s_max * (rhoR  - rhoL)
+	flux.mom    = 0.5 * (FL_mom  + FR_mom)  - 0.5 * s_max * (rhouR - rhouL)
+	flux.energy = 0.5 * (FL_engy + FR_engy) - 0.5 * s_max * (ER     - EL)
+
+	return flux
+end
+
+--====================================================================
+-- update (per cell; reads current state, writes next state)
+--====================================================================
+
+function FluidCell:update(dt)
+	dt = 0.000001
+	local nextCell = global.fse.nextCellGet(self.x, self.y)
+
+	-- neighbors (nil = wall)
+	local nL = global.fse.currentCellGet(self.x - 1, self.y)
+	local nR = global.fse.currentCellGet(self.x + 1, self.y)
+
+	-- face fluxes; walls use mirrored ghost states
+	local stateSelf = self:stateGet()
+	local fluxLeft, fluxRight
+
+	if nL then
+		fluxLeft = rusanovFlux(nL:stateGet(), stateSelf)
+	else
+		fluxLeft = rusanovFlux(mirroredStateOf(stateSelf), stateSelf)
+	end
+
+	if nR then
+		fluxRight = rusanovFlux(stateSelf, nR:stateGet())
+	else
+		fluxRight = rusanovFlux(stateSelf, mirroredStateOf(stateSelf))
+	end
+
+	-- conserved update: gains (left face) minus losses (right face)
+	local dtdx = dt / SIZE_CELL
+
+	nextCell.density     = max(
+		self.density     - dtdx * (fluxRight.rho    - fluxLeft.rho),
+		RHO_FLOOR_UPDATE
+	)
+	nextCell.momentum    = self.momentum    - dtdx * (fluxRight.mom    - fluxLeft.mom)
+	nextCell.energyTotal = self.energyTotal - dtdx * (fluxRight.energy - fluxLeft.energy)
+end
+
+--====================================================================
+-- derived values
+--====================================================================
+
+function FluidCell:densityGet()
+	return max(self.density, RHO_FLOOR)
+end
+
+function FluidCell:momentumGet()
+	return self.momentum
+end
+
+function FluidCell:energyTotalGet()
+	return self.energyTotal
+end
+
+function FluidCell:velocityGet()
+	return self:momentumGet() / self:densityGet()
+end
+
+function FluidCell:kineticFromMomentum()
+	local rho  = self:densityGet()
+	local rhou = self:momentumGet()
+	return (rhou * rhou) / (2 * rho)
+end
+
+function FluidCell:temperatureGet()
+	-- e (per kg) = (E - K) / rho;  T = e / cv
+	local e = (self:energyTotalGet() - self:kineticFromMomentum()) / self:densityGet()
+	return e / CV
+end
+
+function FluidCell:pressureStaticGet()
+	-- p = (gamma-1) * (E - K)   [E and K both per volume]
+	return (GAMMA - 1) * (self:energyTotalGet() - self:kineticFromMomentum())
+end
+
+function FluidCell:soundSpeedGet()
+	return sqrt(GAMMA * R_GAS * self:temperatureGet())
+end
+
+function FluidCell:waveSpeedGet()
+	return abs(self:velocityGet()) + self:soundSpeedGet()
+end
+
+function FluidCell:stateGet()
+	return {
+		density     = self:densityGet(),
+		momentum    = self:momentumGet(),
+		energy      = self.energyTotal,
+		pressure    = self:pressureStaticGet(),
+		soundSpeed  = self:soundSpeedGet(),
+	}
+end
+
+--====================================================================
+-- debug
+--====================================================================
+
+function FluidCell:debugSet(active)
+	self.debug = active
+end
+
+function FluidCell:debugGet()
+	return self.debug
+end
+
+return FluidCell

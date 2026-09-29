@@ -23,8 +23,8 @@ function love.update(dt)
 	global.noname.update(dt)
 	global.bladi.update(dt)
 	
-	for c = 1, 1 do
-		global.fse.update(dt)
+	for c = 1, 5 do
+		global.fse.update(_G.global.conf.dtFixed)
 	end
 end
 

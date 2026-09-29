@@ -1,5 +1,5 @@
 --LÖVE main file 
-local version = "v0.0.3d"
+local version = "v0.0.4"
 
 function love.load(args)
 	loadfile("data/init.lua")()
