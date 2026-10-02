@@ -187,6 +187,14 @@ end
 -- state values / setters
 --====================================================================
 
+function FluidCell:stateGet()
+	return {
+		momentum = self.momentum,
+		energyTotal = self.energyTotal,
+		density = self.density
+	}
+end
+
 function FluidCell:momentumGet()
 	return self.momentum
 end

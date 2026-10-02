@@ -2,6 +2,8 @@
 	'noname' is the main table wich should contain all data relevant for things happening here.
 	it is accesable from everywhere in the system using 'global.noname'.
 ]]
+local ColorGradiant = require("ColorGradiant")	
+
 local noname = {
 	--dynamically loaded files.
 	dyn = {},
@@ -42,11 +44,7 @@ function noname.init()
 	
 	debug.log("### MISC ###")
 	
-	local cg = noname.dyn.ColorGradiant.new({
-		lookup = {{0, 0, 0}, {0, 100, 0}}
-	})
 	
-	debug.dlog(cg.colorGet(.5))
 
 	debug.log("##### INIT DONE #####")
 end
